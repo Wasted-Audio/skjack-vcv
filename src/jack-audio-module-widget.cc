@@ -4,18 +4,23 @@
 #include "components.hh"
 
 namespace rack {
-   extern std::shared_ptr<Font> gGuiFont;
+   extern std::shared_ptr<Font> font;
 }
 
 struct JackPortLedTextField : public LedDisplayTextField {
    int managed_port;
+   std::string fontPath;
    jack_audio_module_widget_base* master;
 
    JackPortLedTextField() : LedDisplayTextField() {
-      font = APP->window->loadFont(asset::plugin(::plugin, "res/3270Medium.ttf"));
+      fontPath = asset::plugin(::plugin, "res/3270Medium.ttf");
    }
 
    void draw(const DrawArgs &args) override {
+      std::shared_ptr<Font> font = APP->window->loadFont(fontPath);
+      if (font) {
+         nvgFontFaceId(args.vg, font->handle);
+      }
 
     nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 
@@ -227,43 +232,43 @@ JackAudioModuleWidget::~JackAudioModuleWidget() {}
 jack_audio_out8_module_widget::~jack_audio_out8_module_widget() {}
 jack_audio_in8_module_widget::~jack_audio_in8_module_widget() {}
 
-json_t* jack_audio_module_widget_base::toJson() {
-   auto map = ModuleWidget::toJson();
-   auto port_names = json_array();
+// json_t* jack_audio_module_widget_base::toJson() {
+//    auto map = ModuleWidget::toJson();
+//    auto port_names = json_array();
 
-   for (int i = 0; i < JACK_PORTS; i++) {
-      auto str = json_string(this->port_names[i]->text.c_str());
-      json_array_append_new(port_names, str);
-   }
+//    for (int i = 0; i < JACK_PORTS; i++) {
+//       auto str = json_string(this->port_names[i]->text.c_str());
+//       json_array_append_new(port_names, str);
+//    }
 
-   json_object_set_new(map, "port_names", port_names);
-   return map;
-}
+//    json_object_set_new(map, "port_names", port_names);
+//    return map;
+// }
 
-void jack_audio_module_widget_base::fromJson(json_t* json) {
-   auto module = reinterpret_cast<JackAudioModule*>(this->module);
-   auto port_names = json_object_get(json, "port_names");
-   if (json_is_array(port_names)) {
-      for (size_t i = 0; i < std::min(json_array_size(port_names), (size_t)8); i++) {
-	 auto item = json_array_get(port_names, i);
-	 if (json_is_string(item)) {
-	    if (module->jport[i].rename(json_string_value(item))) {
-	       this->port_names[i]->text = std::string(json_string_value(item));
-	    } else {
-	       static const size_t buffer_size = 128;
-	       char port_name[buffer_size];
-	       hashidsxx::Hashids hash(g_hashid_salt);
-	       std::string id = hash.encode(reinterpret_cast<size_t>(module));
+// void jack_audio_module_widget_base::fromJson(json_t* json) {
+//    auto module = reinterpret_cast<JackAudioModule*>(this->module);
+//    auto port_names = json_object_get(json, "port_names");
+//    if (json_is_array(port_names)) {
+//       for (size_t i = 0; i < std::min(json_array_size(port_names), (size_t)8); i++) {
+// 	 auto item = json_array_get(port_names, i);
+// 	 if (json_is_string(item)) {
+// 	    if (module->jport[i].rename(json_string_value(item))) {
+// 	       this->port_names[i]->text = std::string(json_string_value(item));
+// 	    } else {
+// 	       static const size_t buffer_size = 128;
+// 	       char port_name[buffer_size];
+// 	       hashidsxx::Hashids hash(g_hashid_salt);
+// 	       std::string id = hash.encode(reinterpret_cast<size_t>(module));
 
-	       snprintf(reinterpret_cast<char*>(&port_name),
-			buffer_size,
-			"%s:%d", id.c_str(), (int)i);
-	       this->port_names[i]->setText(std::string(port_name));
-	    }
-	 }
-      }
-   }
-}
+// 	       snprintf(reinterpret_cast<char*>(&port_name),
+// 			buffer_size,
+// 			"%s:%d", id.c_str(), (int)i);
+// 	       this->port_names[i]->setText(std::string(port_name));
+// 	    }
+// 	 }
+//       }
+//    }
+// }
 
 void jack_audio_module_widget_base::on_port_renamed(int port, const std::string& name) {
    if (port < 0 || port > JACK_PORTS) return;
