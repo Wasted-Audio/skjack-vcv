@@ -22,6 +22,7 @@ struct jack_audio_module_base: public Module {
    int lastSampleRate = 0;
    int lastNumOutputs = -1;
    int lastNumInputs = -1;
+   TextField* port_names[8];
 
    dsp::SampleRateConverter<AUDIO_INPUTS> inputSrc;
    dsp::SampleRateConverter<AUDIO_OUTPUTS> outputSrc;
@@ -41,6 +42,9 @@ struct jack_audio_module_base: public Module {
    void assign_stupid_port_names();
 
    void report_backlogged();
+
+   virtual json_t* dataToJson() override;
+   virtual void dataFromJson(json_t* json) override;
 
    jack_audio_module_base(size_t params, size_t inputs,
 			  size_t outputs, size_t lights);
